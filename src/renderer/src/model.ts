@@ -85,7 +85,11 @@ export function commonParent(books: Book[], root: string): string {
         f.slice(0, i + 1).join("/") === folders[0].slice(0, i + 1).join("/"),
     ),
   );
-  return parts.at(-1) || root.replaceAll("\\", "/").split("/").at(-1) || "";
+  return (
+    parts.slice(-1)[0] ||
+    root.replaceAll("\\", "/").split("/").slice(-1)[0] ||
+    ""
+  );
 }
 export function selectRange(
   visible: Book[],
