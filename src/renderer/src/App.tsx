@@ -79,7 +79,7 @@ export default function App() {
       : matchMedia("(prefers-color-scheme: dark)").matches,
   );
   const [version, setVersion] = useState(""),
-    [widths, setWidths] = useState([36, 28, 260, 200, 230, 85, 40]);
+    [widths, setWidths] = useState([32, 24, 190, 150, 175, 70, 24]);
   const [pending, setPending] = useState<null | (() => Promise<void>)>(null);
   const closeAction = useRef<() => void>(() => {});
   const allowClose = useRef(false);

@@ -371,7 +371,12 @@ pub fn save(request: &SaveRequest, root: &Path) -> Result<Book> {
                     }
                     break;
                 }
-                Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => number += 1,
+                Err(e)
+                    if e.kind() == std::io::ErrorKind::AlreadyExists
+                        || fs::symlink_metadata(&backup).is_ok() =>
+                {
+                    number += 1
+                }
                 Err(e) => return Err(err(e)),
             }
         }
