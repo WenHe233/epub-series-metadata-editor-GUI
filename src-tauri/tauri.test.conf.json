@@ -1,0 +1,16 @@
+{
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "EPUB Metadata Editor",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 560,
+        "dragDropEnabled": false,
+        "additionalBrowserArgs": "--remote-debugging-port=0"
+      }
+    ]
+  }
+}

@@ -1,0 +1,84 @@
+name: Verify application
+on:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  frontend:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      - run: npm run test:release
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-test-results
+          path: |
+            .artifacts/*.png
+            test-results
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev webkit2gtk-driver xvfb
+      - run: npm ci
+      - run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
+      - run: cargo test --locked --manifest-path src-tauri/Cargo.toml
+      - run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+      - run: npm run tauri -- build --debug --no-bundle --features desktop-tests --config src-tauri/tauri.test.conf.json
+      - run: cargo install tauri-driver --locked
+      - name: Edge driver
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          cargo install --git https://github.com/chippers/msedgedriver-tool
+          msedgedriver-tool
+          $PWD.Path >> $env:GITHUB_PATH
+      - name: Native integration on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          python scripts/fixtures.py .artifacts/fixtures
+          $env:EPUB_TEST_DIR = (Resolve-Path .artifacts/fixtures).Path
+          node scripts/desktop-test.mjs src-tauri/target/debug/epub-series-metadata-editor.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Native integration on Linux
+        if: runner.os == 'Linux'
+        env:
+          WEBKIT_DISABLE_DMABUF_RENDERER: "1"
+        run: |
+          python3 scripts/fixtures.py .artifacts/fixtures
+          export EPUB_TEST_DIR="$PWD/.artifacts/fixtures"
+          xvfb-run -a node scripts/desktop-test.mjs src-tauri/target/debug/epub-series-metadata-editor
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-test-${{ runner.os }}
+          path: .artifacts

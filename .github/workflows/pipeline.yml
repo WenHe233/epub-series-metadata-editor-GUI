@@ -1,0 +1,102 @@
+name: CI and releases
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+    tags: ["v*"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: pipeline-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    outputs:
+      mode: ${{ steps.mode.outputs.mode }}
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - id: mode
+        shell: bash
+        env:
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+        run: |
+          if [[ "$REF" == refs/tags/* ]]; then
+            echo 'mode=release' >> "$GITHUB_OUTPUT"
+          elif [[ "$EVENT" == pull_request ]]; then
+            echo 'mode=ci' >> "$GITHUB_OUTPUT"
+          elif [[ "$REF" == refs/heads/master ]]; then
+            echo 'mode=nightly' >> "$GITHUB_OUTPUT"
+          else
+            echo 'mode=ci' >> "$GITHUB_OUTPUT"
+          fi
+      - id: version
+        run: node scripts/release.mjs prepare ${{ steps.mode.outputs.mode }}
+      - name: Reject existing published release
+        if: steps.mode.outputs.mode == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          if gh release view "$TAG" --json isDraft --jq '.isDraft' > existing.txt; then
+            test "$(cat existing.txt)" = true || { echo 'Version already published; refusing replacement'; exit 1; }
+          fi
+  verify:
+    needs: prepare
+    uses: ./.github/workflows/verify.yml
+  build:
+    needs: [prepare, verify]
+    uses: ./.github/workflows/build.yml
+    with:
+      version: ${{ needs.prepare.outputs.version }}
+  publish:
+    needs: [prepare, verify, build]
+    if: needs.prepare.outputs.mode != 'ci'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: package-*
+          path: packages
+          merge-multiple: true
+      - name: Verify complete release and calculate checksums
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: node scripts/release.mjs validate packages "$VERSION"
+      - name: Publish complete release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          MODE: ${{ needs.prepare.outputs.mode }}
+          COMMIT: ${{ github.sha }}
+        shell: bash
+        run: |
+          if gh release view "$TAG" --json isDraft --jq '.isDraft' > existing.txt; then
+            test "$(cat existing.txt)" = true || { echo 'Already published; refusing replacement'; exit 1; }
+          else
+            gh release create "$TAG" --draft --target "$COMMIT" --title "EPUB Metadata Editor $VERSION" --generate-notes
+          fi
+          gh release upload "$TAG" packages/* --clobber
+          gh release view "$TAG" --json assets --jq '.assets[].name' | sort > actual.txt
+          find packages -maxdepth 1 -type f -printf '%f\n' | sort > expected.txt
+          diff -u expected.txt actual.txt
+          if [[ "$MODE" == nightly ]]; then
+            gh release edit "$TAG" --draft=false --prerelease --latest=false
+          else
+            gh release edit "$TAG" --draft=false --prerelease=false --latest
+          fi
