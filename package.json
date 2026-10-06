@@ -1,96 +1,44 @@
 {
-  "name": "epub-metadata-editor-electron",
-  "version": "1.0.0",
-  "main": "./out/main/index.js",
-  "author": "Trae",
-  "description": "EPUB Series Metadata Editor",
+  "name": "epub-series-metadata-editor",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A lightweight EPUB series metadata editor",
+  "license": "MIT",
   "scripts": {
-    "dev": "electron-vite dev",
-    "build": "electron-vite build",
-    "preview": "electron-vite preview",
-    "format": "prettier --write .",
-    "pack": "npm run build && electron-builder --dir",
-    "dist": "npm run build && electron-builder"
+    "dev": "tauri dev",
+    "dev:web": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "dist": "tauri build",
+    "tauri": "tauri",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:release": "node --test scripts/release.test.mjs",
+    "icons": "tauri icon assets/icon.svg"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
-    "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "@electron-toolkit/preload": "^3.0.0",
-    "@electron-toolkit/utils": "^3.0.0",
-    "adm-zip": "^0.5.10",
-    "antd": "^5.12.0",
-    "fast-xml-parser": "^4.3.2",
+    "@tauri-apps/api": "^2.0.0",
     "i18next": "^25.7.4",
     "i18next-browser-languagedetector": "^8.2.0",
-    "lucide-react": "^0.294.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-i18next": "^16.5.1",
-    "react-resizable": "^3.1.3"
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-i18next": "^16.5.1"
   },
   "devDependencies": {
-    "@types/adm-zip": "^0.5.5",
-    "@types/node": "^18.19.0",
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
-    "@types/react-resizable": "^3.0.8",
-    "@vitejs/plugin-react": "^4.2.0",
-    "electron": "^28.0.0",
-    "electron-builder": "^24.9.1",
-    "electron-vite": "^2.0.0",
-    "prettier": "^3.1.0",
-    "typescript": "^5.3.0",
-    "vite": "^5.0.0"
-  },
-  "build": {
-    "appId": "com.epub.metadata.editor",
-    "productName": "EPUB Metadata Editor",
-    "directories": {
-      "output": "dist"
-    },
-    "files": [
-      "out/**/*"
-    ],
-    "win": {
-      "target": [
-        {
-          "target": "portable",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        }
-      ],
-      "icon": "build/icon.ico",
-      "artifactName": "${productName}-${version}-win-${arch}.${ext}"
-    },
-    "mac": {
-      "target": [
-        {
-          "target": "dmg",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        }
-      ],
-      "icon": "build/icon.icns",
-      "artifactName": "${productName}-${version}-mac-${arch}.${ext}"
-    },
-    "linux": {
-      "target": [
-        {
-          "target": "AppImage",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        }
-      ],
-      "icon": "build/icon.png",
-      "artifactName": "${productName}-${version}-linux-${arch}.${ext}"
-    }
+    "@playwright/test": "^1.58.0",
+    "@tauri-apps/cli": "^2.0.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "prettier": "^3.9.9",
+    "typescript": "^5.9.0",
+    "vite": "^8.3.3",
+    "vitest": "^5.0.3"
   }
 }
