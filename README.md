@@ -1,76 +1,61 @@
 # EPUB 系列信息编辑器
 
-一款用于批量编辑 EPUB 电子书系列元数据的桌面应用，基于 Electron + React + Ant Design 构建。
+基于 Tauri 2、Rust 和 React 的桌面工具，用于批量编辑 EPUB 系列名称及序号。支持中文、英文和亮暗主题。
 
-![平台](https://img.shields.io/badge/平台-Windows%20|%20macOS%20|%20Linux-blue)
-![许可证](https://img.shields.io/badge/许可证-MIT-green)
+## 下载
 
-## 功能特性
+从 [Releases](https://github.com/WenHe233/epub-series-metadata-editor-GUI/releases) 下载正式版。带有 `nightly-` 标签的版本是预览版。
 
-- 📁 **批量处理** - 同时编辑多个 EPUB 文件的系列信息
-- 🌲 **树形视图** - 按文件夹层级结构浏览文件
-- 🔄 **拖拽排序** - 在文件夹内拖拽调整文件顺序
-- 🔢 **智能编号** - 自动编号或智能续编
-- 🪄 **智能识别** - 从已有项自动识别系列名
-- 📂 **父文件夹名** - 使用父文件夹名作为系列名
-- ↩️ **撤销支持** - 撤销批量操作
-- 🌍 **多语言** - 支持中文和英文
-- 🌙 **深色模式** - 支持亮色/深色主题切换
-- 💾 **自动备份** - 保存前可选生成 `.bak` 备份文件
+| 系统                             | 架构                 | 下载格式                |
+| -------------------------------- | -------------------- | ----------------------- |
+| Windows 10 / 11                  | x64、ARM64           | 便携 ZIP、NSIS 安装 EXE |
+| macOS 11+                        | Intel、Apple Silicon | DMG                     |
+| Linux（Ubuntu 24.04 或兼容环境） | x64、ARM64           | AppImage                |
 
-## 安装
+Windows 便携版需要系统已有 WebView2。安装版会在缺少 WebView2 时联网安装，不捆绑完整运行时。AppImage 仍依赖系统图形环境和兼容的 glibc；必要时安装 FUSE，或使用 `APPIMAGE_EXTRACT_AND_RUN=1`。
 
-### 下载安装包
+发行包没有付费代码签名或 Apple 公证。Windows 可能提示未知发布者；macOS 用户需通过系统的“隐私与安全性”允许打开。程序没有应用内自动更新。
 
-从 [Releases](../../releases) 页面下载最新版本：
+## 使用
 
-| 平台 | 架构 | 文件名 |
-|------|------|--------|
-| Windows | x64 | `EPUB Metadata Editor-x.x.x-win-x64.exe` |
-| Windows | ARM64 | `EPUB Metadata Editor-x.x.x-win-arm64.exe` |
-| macOS | Intel | `EPUB Metadata Editor-x.x.x-mac-x64.dmg` |
-| macOS | Apple Silicon | `EPUB Metadata Editor-x.x.x-mac-arm64.dmg` |
-| Linux | x64 | `EPUB Metadata Editor-x.x.x-linux-x64.AppImage` |
-| Linux | ARM64 | `EPUB Metadata Editor-x.x.x-linux-arm64.AppImage` |
+1. 打开包含 EPUB 的文件夹，按需勾选“包含子目录”。
+2. 左侧目录用于筛选和级联选择；中央表格可直接编辑系列和序号。Shift 点击复选框可选择连续书籍。
+3. 拖动书籍行左侧手柄可在同一目录内排序，也可聚焦手柄后用空格键和方向键操作。编号按列表顺序应用。
+4. 右侧面板提供统一系列、父目录命名、多数系列识别、自动编号和智能续编。智能续编保留首项编号，后续从下一整数开始。
+5. 选择保存格式，点击“保存更改”。保存成功的项目移出待保存列表，失败项显示原因并保留修改供重试。
 
-### 从源码构建
+最多撤销最近 20 次编辑或排序操作。保存后清空撤销历史。切换目录、刷新或关闭窗口时，会提示处理未保存的更改。
+
+默认备份和两种系列格式均开启。保存会移除未勾选格式的系列标签；清空系列名会移除系列和序号标签。不会删除非系列 collection。已有备份不会覆盖，后续依次使用 `.bak.1`、`.bak.2`。备份可能包含多个历史版本，请自行管理。
+
+写入先在同目录生成临时文件，通过检查后替换原文件。程序会检查外部修改冲突；发生冲突时先保留编辑结果，再重新扫描文件。损坏、无法解析或无权限读取的 EPUB 会单独显示错误。
+
+## 开发
+
+需要 Node.js 24、npm、Rust stable，以及 [Tauri 系统依赖](https://v2.tauri.app/start/prerequisites/)。
 
 ```bash
-# 克隆仓库
-git clone https://github.com/your-repo/epub-series-metadata-editor-GUI.git
-cd epub-series-metadata-editor-GUI
-
-# 安装依赖
-npm install
-
-# 开发模式运行
+npm ci
 npm run dev
+```
 
-# 打包当前平台
+`npm run dev:web` 仅预览界面，文件访问需要桌面程序。
+
+```bash
+npm run build
+npm test
+npm run test:release
+npx playwright install chromium
+npm run test:e2e
+cargo test --locked --manifest-path src-tauri/Cargo.toml
+cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 npm run dist
 ```
 
-## 使用方法
+图标源文件是 `assets/icon.svg`，运行 `npm run icons` 重新生成各平台图标。前端代码位于 `src/renderer`；Rust 命令和 EPUB 处理位于 `src-tauri/src`。依赖锁文件随代码提交。
 
-1. 点击 **打开文件夹** 选择包含 EPUB 文件的目录
-2. 勾选 **递归搜索子目录** 以包含子文件夹中的文件
-3. 使用复选框选择文件（Shift+点击 可范围选择）
-4. 使用批量操作：
-   - **统一系列** - 为所选文件设置统一的系列名
-   - **自动编号** - 按 1, 2, 3... 顺序编号
-   - **智能续编** - 从第一项开始续编
-5. 点击 **保存更改** 将元数据写入 EPUB 文件
-
-## 技术栈
-
-- **Electron** - 桌面应用框架
-- **React** - UI 库
-- **Ant Design** - UI 组件库
-- **TypeScript** - 类型安全
-- **Vite** - 构建工具
-- **dnd-kit** - 拖拽功能
-- **i18next** - 国际化
+详细说明见 [测试与验证](docs/TESTING.md) 和 [版本发布](docs/RELEASING.md)。
 
 ## 许可证
 
-MIT License
+MIT

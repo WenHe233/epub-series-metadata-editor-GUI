@@ -107,10 +107,17 @@ dist
 .DS_Store
 Thumbs.db
 
-# Electron
+# Build outputs
 out/
 dist/
 release/
+src-tauri/target/
+src-tauri/gen/
+test-results/
+playwright-report/
+.artifacts/
+src-tauri/icons/android/
+src-tauri/icons/ios/
 *.exe
 *.dmg
 *.deb
