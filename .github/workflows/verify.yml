@@ -22,6 +22,7 @@ jobs:
         if: always()
         with:
           name: ui-test-results
+          include-hidden-files: true
           path: |
             .artifacts/*.png
             test-results
@@ -81,4 +82,5 @@ jobs:
         if: always()
         with:
           name: desktop-test-${{ runner.os }}
+          include-hidden-files: true
           path: .artifacts

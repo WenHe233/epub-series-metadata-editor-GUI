@@ -96,4 +96,5 @@ jobs:
         with:
           name: package-${{ matrix.platform }}-${{ matrix.arch }}
           path: .artifacts/packages/*
+          include-hidden-files: true
           if-no-files-found: error
