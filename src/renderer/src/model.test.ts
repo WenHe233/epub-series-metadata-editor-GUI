@@ -11,7 +11,7 @@ import {
 } from "./model";
 const book = (name: string, seriesIndex = "", series = ""): Book => ({
   filePath: "/books/" + name,
-  fileName: name.split("/").at(-1)!,
+  fileName: name.split("/").slice(-1)[0]!,
   relativePath: name,
   title: "",
   author: "",

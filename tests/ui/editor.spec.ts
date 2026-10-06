@@ -36,7 +36,17 @@ async function mock(page: Page) {
           if (cmd === "scan_epubs")
             return { books: structuredClone(books), errors: [] };
           if (cmd === "app_version") return "2.0.0";
-          if (cmd === "plugin:event|listen") return 1;
+          if (cmd === "plugin:event|listen") {
+            if (args.event === "tauri://close-requested") {
+              (window as any).__testClose = () =>
+                callbacks.get(args.handler)?.({
+                  event: args.event,
+                  id: 1,
+                  payload: null,
+                });
+            }
+            return 1;
+          }
           if (cmd === "save_epub") {
             const req = args.request;
             if (req.filePath.endsWith("02.epub") && fail) {
@@ -136,4 +146,33 @@ test("filters, shift selection, numbering, unsaved dialog and themes", async ({
   await page.screenshot({ path: ".artifacts/ui-dark.png", fullPage: true });
   await page.getByRole("button", { name: "切换主题" }).click();
   await page.screenshot({ path: ".artifacts/ui-light.png", fullPage: true });
+});
+
+test("focused edits participate in close protection and undo as one edit", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.getByRole("button", { name: "Open folder" }).first().click();
+  const input = page.getByLabel("Series 01.epub", { exact: true });
+  await input.focus();
+  await input.pressSequentially(" updated");
+  await expect(
+    page.getByRole("button", { name: /Save changes/ }),
+  ).toBeEnabled();
+  await page.evaluate(() => (window as any).__testClose());
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect(input).toHaveValue("Saga");
+  await expect(
+    page.getByRole("button", { name: /Save changes/ }),
+  ).toBeDisabled();
+  await expect(
+    page.getByRole("button", { name: /Save changes/ }),
+  ).toBeInViewport();
+  expect(
+    await page
+      .locator(".editor-panel")
+      .evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
+  ).toBe(true);
 });

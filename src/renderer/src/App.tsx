@@ -149,10 +149,10 @@ export default function App() {
     window.addEventListener("beforeunload", listener);
     return () => window.removeEventListener("beforeunload", listener);
   }, [modified.length]);
-  const commit = (next: Book[]) => {
+  const commit = (next: Book[], recordHistory = true) => {
     if (next === books || JSON.stringify(next) === JSON.stringify(books))
       return;
-    setHistory((h) => [...h, books].slice(-20));
+    if (recordHistory) setHistory((h) => [...h, books].slice(-20));
     setBooks(next);
   };
   const undo = () => {
@@ -395,7 +395,7 @@ export default function App() {
                       onClick={() => setFolder(path)}
                     >
                       <Folder size={15} />
-                      <span>{path.split("/").at(-1)}</span>
+                      <span>{path.split("/").slice(-1)[0]}</span>
                     </button>
                     <small>{children.length}</small>
                   </div>
@@ -421,7 +421,7 @@ export default function App() {
         <main className="main">
           <div className="list-toolbar">
             <div>
-              <h2>{folder.split("/").at(-1) || t("allBooks")}</h2>
+              <h2>{folder.split("/").slice(-1)[0] || t("allBooks")}</h2>
               <span className="muted">
                 {visible.length} {t("books")}
               </span>
@@ -574,13 +574,14 @@ export default function App() {
                             );
                             setAnchor(book.filePath);
                           }}
-                          edit={(field, value) =>
+                          edit={(field, value, recordHistory) =>
                             commit(
                               books.map((b) =>
                                 b.filePath === book.filePath
                                   ? { ...b, [field]: value }
                                   : b,
                               ),
+                              recordHistory,
                             )
                           }
                         />
@@ -599,7 +600,7 @@ export default function App() {
               </strong>
               {errors.map((e, i) => (
                 <p key={i}>
-                  <b>{e.filePath.split(/[/\\]/).at(-1)}</b> {e.error}
+                  <b>{e.filePath.split(/[/\\]/).slice(-1)[0]}</b> {e.error}
                 </p>
               ))}
             </div>

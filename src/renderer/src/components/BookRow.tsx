@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, BookOpen } from "lucide-react";
@@ -13,10 +13,12 @@ function Edit({
 }: {
   value: string;
   label: string;
-  onCommit: (s: string) => void;
+  onCommit: (s: string, recordHistory: boolean) => void;
   disabled: boolean;
 }) {
   const [draft, setDraft] = useState(value);
+  const started = useRef(false);
+  const initial = useRef(value);
   useEffect(() => setDraft(value), [value]);
   return (
     <input
@@ -24,15 +26,23 @@ function Edit({
       aria-label={label}
       value={draft}
       disabled={disabled}
-      onChange={(e) => setDraft(e.target.value)}
-      onClick={(e) => e.stopPropagation()}
-      onBlur={() => {
-        if (draft !== value) onCommit(draft);
+      onFocus={() => {
+        started.current = false;
+        initial.current = value;
       }}
+      onChange={(e) => {
+        setDraft(e.target.value);
+        onCommit(e.target.value, !started.current);
+        started.current = true;
+      }}
+      onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => {
         e.stopPropagation();
         if (e.key === "Enter") e.currentTarget.blur();
-        if (e.key === "Escape") setDraft(value);
+        if (e.key === "Escape") {
+          setDraft(initial.current);
+          onCommit(initial.current, false);
+        }
       }}
     />
   );
@@ -50,7 +60,11 @@ export default function BookRow({
   modified: boolean;
   disabled: boolean;
   select: (shift: boolean) => void;
-  edit: (field: "series" | "seriesIndex", value: string) => void;
+  edit: (
+    field: "series" | "seriesIndex",
+    value: string,
+    recordHistory: boolean,
+  ) => void;
 }) {
   const { t } = useTranslation();
   const {
@@ -110,7 +124,7 @@ export default function BookRow({
           value={book.series}
           label={`${t("series")} ${book.fileName}`}
           disabled={disabled}
-          onCommit={(v) => edit("series", v)}
+          onCommit={(v, recordHistory) => edit("series", v, recordHistory)}
         />
       </td>
       <td>
@@ -118,7 +132,7 @@ export default function BookRow({
           value={book.seriesIndex}
           label={`${t("index")} ${book.fileName}`}
           disabled={disabled}
-          onCommit={(v) => edit("seriesIndex", v)}
+          onCommit={(v, recordHistory) => edit("seriesIndex", v, recordHistory)}
         />
       </td>
       <td>
