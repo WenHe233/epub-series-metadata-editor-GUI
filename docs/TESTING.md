@@ -5,7 +5,7 @@
 - Rust 集成测试生成临时 EPUB，检查系列格式、小数序号、XML 命名空间和转义、多 collection、清空系列、备份不覆盖、外部冲突、损坏文件、只读文件、mimetype 顺序及非 OPF 条目不变。
 - Vitest 检查批量编号、自然显示顺序下的操作、目录边界、范围选择、系列识别及修改比较。
 - Playwright 使用模拟 IPC 检查界面编辑、撤销、部分保存失败后的重试、刷新、选择、智能续编、未保存提示及中英文主题。
-- Windows 和 Linux 使用 tauri-driver 操作真实 WebView，调用 Rust 完成扫描、编辑、保存、重新读取和越权路径拒绝。
+- Windows 和 Linux 使用 tauri-driver 操作真实 WebView，调用 Rust 完成扫描、编辑、保存、重新读取、越权路径拒绝及保存后关闭窗口。
 - 六个原生构建目标运行 Rust 测试并打包，随后检查应用至少持续运行五秒。Linux 启动的是 AppImage；Windows 和 macOS 启动的是对应原生可执行文件。启动检查不等同于每个平台的完整交互验证。
 
 桌面测试专用的 `desktop-tests` Cargo feature 允许从 `EPUB_TEST_DIR` 读取测试目录，跳过系统选目录对话框。正式和 Nightly 打包均不启用此 feature。测试文件由 `scripts/fixtures.py` 生成，禁止对真实书库运行测试。
