@@ -159,6 +159,26 @@ try {
     "GET",
   );
   writeFileSync(".artifacts/desktop.png", Buffer.from(screenshot, "base64"));
+  await execute(() => {
+    void window.__TAURI_INTERNALS__.invoke("plugin:window|close", {
+      label: "main",
+    });
+    return true;
+  });
+  await wait(async () => {
+    try {
+      const handles = await request(
+        "/session/" + id + "/window/handles",
+        null,
+        "GET",
+      );
+      return handles.length === 0;
+    } catch (error) {
+      if (/"error":"(?:invalid session id|no such window)"/.test(error.message))
+        return true;
+      throw error;
+    }
+  });
   writeFileSync(
     ".artifacts/desktop-test.json",
     JSON.stringify(
@@ -173,6 +193,7 @@ try {
           "save",
           "rescan",
           "path rejection",
+          "close after saving",
         ],
       },
       null,
